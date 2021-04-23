@@ -36,8 +36,6 @@ func main() {
 	}()
 
 	if err := cmd.Execute(ctx); err != nil {
-
-		///fmt.Printf("%+q\n", err)
 		type stackTracer interface {
 			StackTrace() errors.StackTrace
 		}
