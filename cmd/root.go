@@ -17,7 +17,7 @@ func getRootCmd(ctx context.Context, cfg *config) *ffcli.Command {
 	rootFlagSet.StringVar(&cfg.User, "user", "", "bmc user")
 	rootFlagSet.StringVar(&cfg.Pass, "pass", "", "bmc pass")
 	rootFlagSet.IntVar(&cfg.Timeout, "timeout", 30, "timeout (in seconds) for BMC calls")
-
+	rootFlagSet.StringVar(&cfg.Protocol, "preferprotocol", "", "which BMC protocol to try first (ex. redfish)")
 
 	return &ffcli.Command{
 		ShortUsage: "bmctool [flags] <subcommand>",

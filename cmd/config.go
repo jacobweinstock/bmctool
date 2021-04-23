@@ -4,7 +4,8 @@ type config struct {
 	auth
 	power
 	bootDevice
-	Timeout int
+	Timeout  int
+	Protocol string
 }
 
 type auth struct {

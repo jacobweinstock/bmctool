@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const bootDeviceCmd = "bootdevice"
+const bootDeviceCmd = "boot"
 
 func getBootDeviceCmd(ctx context.Context, cfg *config) *ffcli.Command {
 	bootDeviceFlagSet := flag.NewFlagSet(bootDeviceCmd, flag.ExitOnError)
@@ -33,7 +33,7 @@ func getBootDeviceCmd(ctx context.Context, cfg *config) *ffcli.Command {
 					fields[0] = msg.Value()
 					fields[1] = msg.Param()
 				}
-				return fmt.Errorf("got '%v', device must be one of [%v]", fields[0], fields[1])
+				return fmt.Errorf("'%v' not a valid device, must be one of [%v]", fields[0], fields[1])
 			}
 			client := bmclib.NewClient(cfg.IP, "623", cfg.User, cfg.Pass)
 			var err error
@@ -45,6 +45,7 @@ func getBootDeviceCmd(ctx context.Context, cfg *config) *ffcli.Command {
 			}
 			defer client.Close(ctx)
 
+			client.Registry.Drivers = client.Registry.PreferProtocol(cfg.Protocol)
 			ok, err := client.SetBootDevice(ctx, cfg.Device, cfg.Persistent, false)
 			if err != nil {
 				return errors.Wrap(err, "failed to set boot device")

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/peterbourgon/ff/v3"
 	"github.com/peterbourgon/ff/v3/ffcli"
+	"github.com/pkg/errors"
 )
 
 const powerCmd = "power"
@@ -21,7 +21,7 @@ func getPowerCmd(ctx context.Context, cfg *config) *ffcli.Command {
 	powerFlagSet.StringVar(&cfg.Action, "action", "", "power action")
 	return &ffcli.Command{
 		Name:       powerCmd,
-		ShortUsage: "bmctool power [-n times] <arg>",
+		ShortUsage: "bmctool power -action [on|off|cycle|reset|status]",
 		ShortHelp:  "Power actions for a machine.",
 		FlagSet:    powerFlagSet,
 		Options:    []ff.Option{ff.WithEnvVarPrefix(strings.ToUpper(appName))},
@@ -32,7 +32,7 @@ func getPowerCmd(ctx context.Context, cfg *config) *ffcli.Command {
 					fields[0] = msg.Value()
 					fields[1] = msg.Param()
 				}
-				return fmt.Errorf("got '%v', power action must be one of [%v]", fields[0], fields[1])
+				return fmt.Errorf("'%v' not a valid power action, must be one of [%v]", fields[0], fields[1])
 			}
 			client := bmclib.NewClient(cfg.IP, "623", cfg.User, cfg.Pass)
 			var err error
@@ -40,13 +40,14 @@ func getPowerCmd(ctx context.Context, cfg *config) *ffcli.Command {
 			defer cancel()
 			client.Registry.Drivers, err = client.Open(ctx)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "failed to set power state")
 			}
 			defer client.Close(ctx)
 
+			client.Registry.Drivers = client.Registry.PreferProtocol(cfg.Protocol)
 			ok, err := client.SetPowerState(ctx, cfg.Action)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "failed to set power state")
 			}
 			if !ok {
 				return errors.New("an unknown error occured")
