@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/jacobweinstock/bmctool/cmd"
-	"github.com/pkg/errors"
 )
 
 func main() {
@@ -36,17 +34,7 @@ func main() {
 	}()
 
 	if err := cmd.Execute(ctx); err != nil {
-		type stackTracer interface {
-			StackTrace() errors.StackTrace
-		}
-		msg := `{"level":"error", "msg":"bmctool failed", "error":%q, "stacktrace":%q}`
-		var st string
-		e, ok := err.(stackTracer)
-		if ok {
-			tr := e.StackTrace()
-			st = strings.Replace(fmt.Sprintf("%+v", tr), `\n`, "\n", -1)
-		}
-		fmt.Printf(msg, err, st)
 		exitCode = 1
+		fmt.Fprintf(os.Stderr, "%v\n", err)
 	}
 }

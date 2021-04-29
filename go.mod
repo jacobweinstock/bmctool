@@ -3,7 +3,7 @@ module github.com/jacobweinstock/bmctool
 go 1.16
 
 require (
-	github.com/bmc-toolbox/bmclib v0.4.12-0.20210406141725-44f2b3dca139
+	github.com/bmc-toolbox/bmclib v0.4.12-0.20210428204300-52c1fe312e5b
 	github.com/go-logr/logr v0.4.0
 	github.com/go-logr/zapr v0.4.0
 	github.com/go-playground/validator v9.31.0+incompatible
