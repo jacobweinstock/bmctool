@@ -12,7 +12,7 @@ test: ## Run unit tests
 
 .PHONY: test-ci
 test-ci: ## Run unit tests for CI
-	go test -race -coverprofile=cover.out ./... > test.output
+	go test -coverprofile=cover.out ./... > test.output
 
 .PHONY: cover
 cover: ## Run unit tests with coverage report
