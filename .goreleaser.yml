@@ -1,0 +1,60 @@
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - env:
+      - CGO_ENABLED=0
+    flags: -trimpath
+    ldflags: '-s -w -extldflags "-static"'
+    goos:
+      - linux
+      - windows
+      - darwin
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+dockers:
+- image_templates:
+  - "ghcr.io/jacobweinstock/bmctool:{{ .Version }}-amd64"
+  use_buildx: true
+  dockerfile: Dockerfile.goreleaser
+  build_flag_templates:
+  - "--pull"
+  - "--label=org.opencontainers.image.created={{.Date}}"
+  - "--label=org.opencontainers.image.name={{.ProjectName}}"
+  - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  - "--label=org.opencontainers.image.version={{.Version}}"
+  - "--label=org.opencontainers.image.source={{.GitURL}}"
+  - "--platform=linux/amd64"
+- image_templates:
+  - "ghcr.io/jacobweinstock/bmctool:{{ .Version }}-arm64"
+  use_buildx: true
+  goarch: arm64
+  dockerfile: Dockerfile.goreleaser
+  build_flag_templates:
+  - "--pull"
+  - "--label=org.opencontainers.image.created={{.Date}}"
+  - "--label=org.opencontainers.image.name={{.ProjectName}}"
+  - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  - "--label=org.opencontainers.image.version={{.Version}}"
+  - "--label=org.opencontainers.image.source={{.GitURL}}"
+  - "--platform=linux/arm64"
+docker_manifests:
+- name_template: ghcr.io/jacobweinstock/bmctool:{{ .Version }}
+  image_templates:
+  - ghcr.io/jacobweinstock/bmctool:{{ .Version }}-amd64
+  - ghcr.io/jacobweinstock/bmctool:{{ .Version }}-arm64

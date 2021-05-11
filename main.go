@@ -35,6 +35,6 @@ func main() {
 
 	if err := cmd.Execute(ctx); err != nil {
 		exitCode = 1
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		fmt.Fprintf(os.Stderr, `{"error":"%v"}`, err)
 	}
 }

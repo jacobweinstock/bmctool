@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bmc-toolbox/bmclib"
+	"github.com/bmc-toolbox/bmclib/bmc"
 	"github.com/go-playground/validator"
 	"github.com/jacobweinstock/bmctool/pkg/rootcmd"
 	"github.com/peterbourgon/ff/v3"
@@ -52,46 +53,47 @@ func (c *Config) Exec(ctx context.Context, args []string) error {
 	if err := c.validateConfig(ctx); err != nil {
 		return err
 	}
-	c.rootConfig.Log.V(0).Info("boot device start", "device", c.Device)
-	ok, err := c.doBootDevice(ctx)
+	log := c.rootConfig.Log.WithValues("device", c.Device)
+	log.V(0).Info("set boot device start", "device", c.Device)
+	ok, metadata, err := c.doBootDevice(ctx)
 	if err != nil {
-		c.rootConfig.Log.V(0).Info("boot device complete", "device", c.Device, "successful", ok, "error", err.Error())
+		log.V(0).Info("set boot device complete", "successful", ok, "details", metadata, "error", err.Error())
 		return err
 	}
-	c.rootConfig.Log.V(0).Info("boot device complete", "device", c.Device, "successful", ok)
+	log.V(0).Info("set boot device complete", "successful", ok, "provider", metadata.SuccessfulProvider)
 	return err
 }
 
 func (c *Config) validateConfig(ctx context.Context) error {
 	if err := validator.New().Struct(c); err != nil {
-		fields := make([]interface{}, 2)
+		var errMsg []interface{}
+		s := "'%v' not a valid %v, must be %v [%v]"
 		for _, msg := range err.(validator.ValidationErrors) {
-			fields[0] = msg.Value()
-			fields[1] = msg.Param()
+			errMsg = append(errMsg, msg.Value(), msg.Field(), msg.Tag(), msg.Param())
 		}
-		return fmt.Errorf("'%v' not a valid device, must be one of [%v]", fields[0], fields[1])
+		return fmt.Errorf(s, errMsg...)
 	}
 	return nil
 }
 
-func (c *Config) doBootDevice(ctx context.Context) (bool, error) {
-	client := bmclib.NewClient(c.rootConfig.IP, "623", c.rootConfig.User, c.rootConfig.Pass)
-	var err error
+func (c *Config) doBootDevice(ctx context.Context) (ok bool, metadata bmc.Metadata, err error) {
+	client := bmclib.NewClient(c.rootConfig.IP, c.rootConfig.Port, c.rootConfig.User, c.rootConfig.Pass)
 	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(c.rootConfig.Timeout))
 	defer cancel()
 	err = client.Open(ctx)
 	if err != nil {
-		return false, errors.Wrap(err, "failed to set boot device")
+		return false, metadata, errors.Wrap(err, "failed to set boot device")
 	}
 	defer client.Close(ctx)
 
 	client.Registry.Drivers = client.Registry.PreferProtocol(c.rootConfig.Protocol)
-	ok, err := client.SetBootDevice(ctx, c.Device, c.Persistent, false)
+	ok, err = client.SetBootDevice(ctx, c.Device, c.Persistent, false)
+	metadata = client.GetMetadata()
 	if err != nil {
-		return false, errors.Wrap(err, "failed to set boot device")
+		return false, metadata, err
 	}
 	if !ok {
-		return false, errors.New("an unknown error occurred")
+		return false, metadata, errors.New("setting boot device failed with an unknown error")
 	}
-	return true, nil
+	return true, metadata, nil
 }

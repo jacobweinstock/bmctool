@@ -23,6 +23,7 @@ type Config struct {
 
 type Auth struct {
 	IP   string `validate:"required"`
+	Port string
 	User string `validate:"required"`
 	Pass string `validate:"required"`
 }
@@ -35,6 +36,7 @@ func New() (*ffcli.Command, *Config) {
 	cfg.RegisterFlags(fs)
 
 	return &ffcli.Command{
+		Name:       appName,
 		ShortUsage: "bmctool [flags] <subcommand>",
 		FlagSet:    fs,
 		Options:    []ff.Option{ff.WithEnvVarPrefix(strings.ToUpper(appName))},
@@ -45,6 +47,7 @@ func New() (*ffcli.Command, *Config) {
 
 func (c *Config) RegisterFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.IP, "ip", "", "bmc ip")
+	fs.StringVar(&c.Port, "port", "623", "bmc port")
 	fs.StringVar(&c.User, "user", "", "bmc user")
 	fs.StringVar(&c.Pass, "pass", "", "bmc pass")
 	fs.IntVar(&c.Timeout, "timeout", 30, "timeout (in seconds) for BMC calls")

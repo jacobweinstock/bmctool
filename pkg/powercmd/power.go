@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bmc-toolbox/bmclib"
+	"github.com/bmc-toolbox/bmclib/bmc"
 	"github.com/go-playground/validator"
 	"github.com/jacobweinstock/bmctool/pkg/rootcmd"
 	"github.com/peterbourgon/ff/v3"
@@ -51,46 +52,47 @@ func (c *Config) Exec(ctx context.Context, args []string) error {
 	if err := c.validateConfig(ctx); err != nil {
 		return err
 	}
-	c.rootConfig.Log.V(0).Info("power action start", "action", c.Action)
-	ok, err := c.doPower(ctx)
+	log := c.rootConfig.Log.WithValues("action", c.Action)
+	log.V(0).Info("power action start")
+	ok, metadata, err := c.doPower(ctx)
 	if err != nil {
-		c.rootConfig.Log.V(0).Info("power action complete", "action", c.Action, "successful", ok, "error", err.Error())
+		log.V(0).Info("power action complete", "successful", ok, "details", metadata, "error", err.Error())
 		return err
 	}
-	c.rootConfig.Log.V(0).Info("power action complete", "action", c.Action, "successful", ok)
+	log.V(0).Info("power action complete", "successful", ok, "provider", metadata.SuccessfulProvider)
 	return err
 }
 
 func (c *Config) validateConfig(ctx context.Context) error {
 	if err := validator.New().StructPartialCtx(ctx, c, "Action"); err != nil {
-		fields := make([]interface{}, 2)
+		var errMsg []interface{}
+		s := "'%v' not a valid %v, must be %v [%v]"
 		for _, msg := range err.(validator.ValidationErrors) {
-			fields[0] = msg.Value()
-			fields[1] = msg.Param()
+			errMsg = append(errMsg, msg.Value(), msg.Field(), msg.Tag(), msg.Param())
 		}
-		return fmt.Errorf("'%v' not a valid power action, must be one of [%v]", fields[0], fields[1])
+		return fmt.Errorf(s, errMsg...)
 	}
 	return nil
 }
 
-func (c *Config) doPower(ctx context.Context) (bool, error) {
+func (c *Config) doPower(ctx context.Context) (ok bool, metadata bmc.Metadata, err error) {
 	client := bmclib.NewClient(c.rootConfig.IP, "623", c.rootConfig.User, c.rootConfig.Pass)
-	var err error
 	ctx, cancel := context.WithTimeout(ctx, time.Second*time.Duration(c.rootConfig.Timeout))
 	defer cancel()
 	err = client.Open(ctx)
 	if err != nil {
-		return false, errors.Wrap(err, "failed to set power state")
+		return false, metadata, errors.Wrapf(err, "failed to set power state: %+v", client.GetMetadata())
 	}
 	defer client.Close(ctx)
 
 	client.Registry.Drivers = client.Registry.PreferProtocol(c.rootConfig.Protocol)
-	ok, err := client.SetPowerState(ctx, c.Action)
+	ok, err = client.SetPowerState(ctx, c.Action)
+	metadata = client.GetMetadata()
 	if err != nil {
-		return false, errors.Wrap(err, "failed to set power state")
+		return false, metadata, err
 	}
 	if !ok {
-		return false, errors.New("an unknown error occured")
+		return false, metadata, errors.New("an unknown error occured")
 	}
-	return true, nil
+	return true, metadata, nil
 }
