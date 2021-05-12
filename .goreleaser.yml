@@ -40,21 +40,21 @@ dockers:
   - "--label=org.opencontainers.image.version={{.Version}}"
   - "--label=org.opencontainers.image.source={{.GitURL}}"
   - "--platform=linux/amd64"
-#- image_templates:
-#  - "ghcr.io/jacobweinstock/bmctool:{{ .Version }}-arm64"
-#  use_buildx: true
-#  goarch: arm64
-#  dockerfile: Dockerfile.goreleaser
-#  build_flag_templates:
-#  - "--pull"
-#  - "--label=org.opencontainers.image.created={{.Date}}"
-#  - "--label=org.opencontainers.image.name={{.ProjectName}}"
-#  - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-#  - "--label=org.opencontainers.image.version={{.Version}}"
-#  - "--label=org.opencontainers.image.source={{.GitURL}}"
-#  - "--platform=linux/arm64"
+- image_templates:
+  - "ghcr.io/jacobweinstock/bmctool:{{ .Version }}-arm64"
+  use_buildx: true
+  goarch: arm64
+  dockerfile: Dockerfile.goreleaser
+  build_flag_templates:
+  - "--pull"
+  - "--label=org.opencontainers.image.created={{.Date}}"
+  - "--label=org.opencontainers.image.name={{.ProjectName}}"
+  - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  - "--label=org.opencontainers.image.version={{.Version}}"
+  - "--label=org.opencontainers.image.source={{.GitURL}}"
+  - "--platform=linux/arm64"
 docker_manifests:
 - name_template: ghcr.io/jacobweinstock/bmctool:{{ .Version }}
   image_templates:
   - ghcr.io/jacobweinstock/bmctool:{{ .Version }}-amd64
-#  - ghcr.io/jacobweinstock/bmctool:{{ .Version }}-arm64
+  - ghcr.io/jacobweinstock/bmctool:{{ .Version }}-arm64

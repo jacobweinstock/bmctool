@@ -11,7 +11,7 @@ FROM alpine:3.8
 LABEL maintainers="https://github.com/jacobweinstock"
 
 WORKDIR /tmp
-RUN apk add ipmitool=1.8.18-r6
+RUN apk add ipmitool=1.8.18-r9
 
 USER nobody
 COPY --from=builder /code/bin/bmctool-linux-amd64 /bmctool-linux-amd64
